@@ -3,18 +3,12 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Raft Scope</title>
+    <title>Raft Scope (Rust/WASM)</title>
+    <link data-trunk rel="copy-dir" href="bootstrap-3.1.1" />
+    <link data-trunk rel="copy-file" href="style.css" />
     <link href="bootstrap-3.1.1/css/bootstrap.min.css" rel="stylesheet">
-    <link href="bootstrap-slider/css/bootstrap-slider.css" rel="stylesheet">
-    <script src="jquery/jquery.min.js"></script>
-    <script src="bootstrap-3.1.1/js/bootstrap.min.js"></script>
-    <script src="bootstrap-slider/js/bootstrap-slider.js"></script>
-    <script src="bootstrap-contextmenu/bootstrap-contextmenu.js"></script>
-    <script src="util.js"></script>
-    <script src="raft.js"></script>
-    <script src="state.js"></script>
-    <script src="script.js"></script>
     <link href="style.css" rel="stylesheet">
+    <link data-trunk rel="rust" data-wasm-opt="0" />
   </head>
   <body>
     <div class="container">
@@ -42,14 +36,15 @@
         </svg>
       </div>
       <div class="row" style="margin-top: 20px">
-        <a id="time-button" href="#"><span id="time-icon" class="glyphicon glyphicon-time" style="font-size: 24pt; vertical-align: middle" data-toggle="tooltip" title="Timeline; click to pause/play"></span></a>
+        <a id="time-button" href="#"><span id="time-icon" class="glyphicon glyphicon-time" style="font-size: 24pt; vertical-align: middle" title="Timeline; click to pause/play"></span></a>
         &nbsp;&nbsp;
-        <input id="time" style="width: 650px" data-slider-id='timeSlider' type="text" data-slider-min="0" data-slider-max="1000" data-slider-step="1" data-slider-value="0" />
+        <input id="time" style="width: 650px" type="range" min="0" max="1000" step="1" value="0" />
       </div>
       <div class="row" style="margin-top: 20px">
-        <span id="speed-icon" class="glyphicon glyphicon-dashboard" style="font-size: 24pt; vertical-align: middle" data-toggle="tooltip" title="Simulation speed"></span>
+        <span id="speed-icon" class="glyphicon glyphicon-dashboard" style="font-size: 24pt; vertical-align: middle" title="Simulation speed"></span>
         &nbsp;&nbsp;
-        <input id="speed" style="width: 650px"  data-slider-id='speedSlider' type="text" data-slider-min="0" data-slider-max="3" data-slider-step=".01" data-slider-value="2" />
+        <input id="speed" style="width: 650px; direction: rtl" type="range" min="0" max="3" step=".01" value="2" />
+        &nbsp;<span id="speed-value"></span>
       </div>
     </div>
 
@@ -77,64 +72,23 @@
           </div>
           <div class="modal-body">
             <table class="table">
-              <tr>
-                <td><kbd>&nbsp;</kbd> / <kbd>.</kbd></td>
-                <td>Pause/unpause</td>
-              </tr>
-              <tr>
-                <td><kbd>?</kbd></td>
-                <td>Help</td>
-              </tr>
-              <tr>
-                <td><kbd>C</kbd></td>
-                <td>Submit client request to leader of highest term, if any</td>
-              </tr>
-              <tr>
-                <td><kbd>R</kbd></td>
-                <td>Restart leader of highest term, if any</td>
-              </tr>
-              <tr>
-                <td><kbd>T</kbd></td>
-                <td>Adjust election timers to avoid a split vote</td>
-              </tr>
-              <tr>
-                <td><kbd>A</kbd></td>
-                <td>Align election timers to encourage a split vote</td>
-              </tr>
-              <tr>
-                <td><kbd>L</kbd></td>
-                <td>Set up log replication start scenario</td>
-              </tr>
-              <tr>
-                <td><kbd>B</kbd></td>
-                <td>Resume all servers</td>
-              </tr>
-              <tr>
-                <td><kbd>F</kbd></td>
-                <td>Fork playback, discarding future</td>
-              </tr>
+              <tr><td><kbd>&nbsp;</kbd> / <kbd>.</kbd></td><td>Pause/unpause</td></tr>
+              <tr><td><kbd>?</kbd></td><td>Help</td></tr>
+              <tr><td><kbd>C</kbd></td><td>Submit client request to leader of highest term, if any</td></tr>
+              <tr><td><kbd>R</kbd></td><td>Restart leader of highest term, if any</td></tr>
+              <tr><td><kbd>T</kbd></td><td>Adjust election timers to avoid a split vote</td></tr>
+              <tr><td><kbd>A</kbd></td><td>Align election timers to encourage a split vote</td></tr>
+              <tr><td><kbd>L</kbd></td><td>Set up log replication start scenario</td></tr>
+              <tr><td><kbd>B</kbd></td><td>Resume all servers</td></tr>
+              <tr><td><kbd>F</kbd></td><td>Fork playback, discarding future</td></tr>
             </table>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="modal-section" class="modal" tabindex="-1" data-keyboard="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <div class="text-center" style="padding: 200px 0">
-              <h1></h1>
-              <h2></h2>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="context-menu">
-      <ul class="dropdown-menu" role="menu">
+    <div id="context-menu" style="display:none">
+      <ul class="dropdown-menu" role="menu" style="display:block; position:static">
       </ul>
     </div>
 

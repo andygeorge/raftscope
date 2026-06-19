@@ -1,8 +1,16 @@
 super hacky visualization of raft, inspired by thesecretlivesofdata
 
-also makes for a good space heater while your browser continuously re-parses and re-renders svg
+now rewritten in Rust, compiled to WebAssembly, rendered as a live SVG via web-sys
+
+still makes for a good space heater while your browser continuously re-renders svg
 
 
 
-after you clone, run the following to get the dependencies:
-    git submodule update --init --recursive
+build and run (needs the Rust toolchain + Trunk):
+    rustup target add wasm32-unknown-unknown
+    cargo install trunk
+    trunk serve            # dev server with hot reload
+    trunk build --release  # production bundle into dist/
+
+run the pure protocol/state tests (no browser needed):
+    cargo test
