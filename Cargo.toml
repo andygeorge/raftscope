@@ -3,6 +3,7 @@ name = "raftscope"
 version = "0.1.0"
 edition = "2021"
 description = "Browser visualization of the Raft consensus algorithm, in Rust + WASM"
+license = "ISC"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
