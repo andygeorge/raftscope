@@ -36,7 +36,7 @@ right-click for actions. Keyboard shortcuts:
 | `a` | align election timers (force split vote) |
 | `l` | set up a log-replication scenario |
 | `b` | resume all servers |
-| `f` | fork playback, discarding the future |
+| `f` | discard the future and continue from here |
 | `?` | help |
 
 ## Architecture
