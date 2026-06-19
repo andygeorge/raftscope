@@ -244,6 +244,7 @@ impl App {
         icon.class_list().remove_1("glyphicon-time").ok();
         icon.class_list().add_1("glyphicon-pause").ok();
         set_attr(&by_id("pause"), "class", "paused");
+        set_status(true);
         self.render();
     }
 
@@ -254,6 +255,7 @@ impl App {
             icon.class_list().remove_1("glyphicon-pause").ok();
             icon.class_list().add_1("glyphicon-time").ok();
             set_attr(&by_id("pause"), "class", "resumed");
+            set_status(false);
             self.render();
         }
     }
@@ -933,9 +935,24 @@ pub fn run() {
     with_app(|app| app.render());
 
     setup_keyboard();
+    setup_action_buttons();
     setup_sliders();
     setup_global_dismiss();
     setup_raf();
+}
+
+fn set_status(paused: bool) {
+    let doc = document();
+    if let Some(pill) = doc.get_element_by_id("status-pill") {
+        if paused {
+            pill.class_list().add_1("paused").ok();
+        } else {
+            pill.class_list().remove_1("paused").ok();
+        }
+    }
+    if let Some(txt) = doc.get_element_by_id("status-text") {
+        txt.set_text_content(Some(if paused { "paused" } else { "running" }));
+    }
 }
 
 fn setup_static_svg() {
@@ -998,6 +1015,73 @@ fn setup_static_svg() {
     }
 }
 
+fn dispatch_key(app: &mut App, k: &str) {
+    let leader = app.state.current.leader_index();
+    match k {
+        " " | "." => {
+            hide_modals();
+            app.toggle_pause();
+        }
+        "c" => {
+            if let Some(li) = leader {
+                app.state.fork();
+                app.state.current.client_request(li);
+                app.state.save();
+                app.render();
+                hide_modals();
+            }
+        }
+        "r" => {
+            if let Some(li) = leader {
+                app.state.fork();
+                app.state.current.restart(li);
+                app.state.save();
+                app.render();
+                hide_modals();
+            }
+        }
+        "t" => {
+            app.state.fork();
+            app.state.current.spread_timers();
+            app.state.save();
+            app.render();
+            hide_modals();
+        }
+        "a" => {
+            app.state.fork();
+            app.state.current.align_timers();
+            app.state.save();
+            app.render();
+            hide_modals();
+        }
+        "l" => {
+            app.state.fork();
+            app.pause();
+            app.state.current.setup_log_replication_scenario();
+            app.state.save();
+            app.render();
+            hide_modals();
+        }
+        "b" => {
+            app.state.fork();
+            app.state.current.resume_all();
+            app.state.save();
+            app.render();
+            hide_modals();
+        }
+        "f" => {
+            app.state.fork();
+            app.render();
+            hide_modals();
+        }
+        "?" => {
+            app.pause();
+            show_modal(&by_id("modal-help"));
+        }
+        _ => {}
+    }
+}
+
 fn setup_keyboard() {
     let cb = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
         if let Some(target) = e.target() {
@@ -1007,80 +1091,31 @@ fn setup_keyboard() {
                 }
             }
         }
-        let key = e.key();
-        let k = key.to_lowercase();
-        with_app(|app| {
-            let leader = app.state.current.leader_index();
-            match k.as_str() {
-                " " | "." => {
-                    hide_modals();
-                    app.toggle_pause();
-                }
-                "c" => {
-                    if let Some(li) = leader {
-                        app.state.fork();
-                        app.state.current.client_request(li);
-                        app.state.save();
-                        app.render();
-                        hide_modals();
-                    }
-                }
-                "r" => {
-                    if let Some(li) = leader {
-                        app.state.fork();
-                        app.state.current.restart(li);
-                        app.state.save();
-                        app.render();
-                        hide_modals();
-                    }
-                }
-                "t" => {
-                    app.state.fork();
-                    app.state.current.spread_timers();
-                    app.state.save();
-                    app.render();
-                    hide_modals();
-                }
-                "a" => {
-                    app.state.fork();
-                    app.state.current.align_timers();
-                    app.state.save();
-                    app.render();
-                    hide_modals();
-                }
-                "l" => {
-                    app.state.fork();
-                    app.pause();
-                    app.state.current.setup_log_replication_scenario();
-                    app.state.save();
-                    app.render();
-                    hide_modals();
-                }
-                "b" => {
-                    app.state.fork();
-                    app.state.current.resume_all();
-                    app.state.save();
-                    app.render();
-                    hide_modals();
-                }
-                "f" => {
-                    app.state.fork();
-                    app.render();
-                    hide_modals();
-                }
-                "?" => {
-                    app.pause();
-                    show_modal(&by_id("modal-help"));
-                }
-                _ => {}
-            }
-        });
+        let k = e.key().to_lowercase();
+        with_app(|app| dispatch_key(app, k.as_str()));
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
     web_sys::window()
         .unwrap()
         .add_event_listener_with_callback("keyup", cb.as_ref().unchecked_ref())
         .unwrap();
     cb.forget();
+}
+
+fn setup_action_buttons() {
+    let nodes = document().query_selector_all("[data-action]").unwrap();
+    for i in 0..nodes.length() {
+        let Some(node) = nodes.item(i) else { continue };
+        let Ok(el) = node.dyn_into::<Element>() else { continue };
+        let action = el.get_attribute("data-action").unwrap_or_default();
+        let cb = Closure::wrap(Box::new(move |e: MouseEvent| {
+            e.prevent_default();
+            let a = action.clone();
+            with_app(|app| dispatch_key(app, a.as_str()));
+        }) as Box<dyn FnMut(MouseEvent)>);
+        el.add_event_listener_with_callback("click", cb.as_ref().unchecked_ref())
+            .unwrap();
+        cb.forget();
+    }
 }
 
 fn setup_sliders() {
